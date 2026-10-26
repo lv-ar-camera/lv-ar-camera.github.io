@@ -12,7 +12,10 @@
   window.compileDone = false;
   try {
     const catalog = await (await fetch(`../models/products.json?v=${Date.now()}`)).json();
-    const images = await Promise.all(catalog.products.map((p) => loadImage(`../cards/Card_${p.id}.png?v=${Date.now()}`)));
+    // urutan target: 6 kartu desain, lalu 6 QR polos (dari PDF tugas)
+    const cardImgs = await Promise.all(catalog.products.map((p) => loadImage(`../cards/Card_${p.id}.png?v=${Date.now()}`)));
+    const plainImgs = await Promise.all(catalog.products.map((p) => loadImage(`../cards/Plain_${p.id}.png?v=${Date.now()}`)));
+    const images = [...cardImgs, ...plainImgs];
     const compiler = new window.MINDAR.IMAGE.Compiler();
     await compiler.compileImageTargets(images, (progress) => log(`Compile ${progress.toFixed(1)}%`));
     const buffer = await compiler.exportData();

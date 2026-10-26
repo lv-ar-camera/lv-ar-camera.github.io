@@ -232,25 +232,32 @@ async function startAR() {
 
   const rigs = [];
   const visible = [];
+  const N = catalog.products.length;
   catalog.products.forEach((p, i) => {
-    const anchor = mindar.addAnchor(i);
     // Unity: Y = tegak lurus kartu. MindAR: kartu di bidang XY, Z keluar dari kartu, lebar kartu = 1 unit.
     const holder = new THREE.Group();
     holder.rotation.x = Math.PI / 2;
-    holder.scale.setScalar(1 / catalog.cardWidthMeters);
     const obj = models.get(p.id);
     holder.add(obj);
-    anchor.group.add(holder);
-
     const rig = new ProductRig(p, obj);
     rigs.push(rig);
-    anchor.onTargetFound = () => {
-      // hanya satu produk boleh tampil: sembunyikan yang lain
-      for (const other of rigs) if (other !== rig) other.hide();
-      visible.length = 0;
-      rig.show(); visible.push(p); updateHud(visible);
-    };
-    anchor.onTargetLost = () => { rig.hide(); visible.splice(visible.indexOf(p), 1); updateHud(visible); };
+
+    // 2 target per produk: kartu desain (indeks i) dan QR polos di PDF (indeks i + N)
+    for (const index of [i, i + N]) {
+      const anchor = mindar.addAnchor(index);
+      anchor.onTargetFound = () => {
+        // hanya satu produk boleh tampil: sembunyikan yang lain
+        for (const other of rigs) if (other !== rig) other.hide();
+        visible.length = 0;
+        holder.scale.setScalar(1 / catalog.cardWidthMeters); // ukuran produk mengikuti lebar target
+        anchor.group.add(holder);
+        rig.show(); visible.push(p); updateHud(visible);
+      };
+      anchor.onTargetLost = () => {
+        if (holder.parent !== anchor.group) return;
+        rig.hide(); visible.splice(visible.indexOf(p), 1); updateHud(visible);
+      };
+    }
   });
 
   try {
