@@ -10,7 +10,7 @@ website terbuka, lalu animasi 3D muncul di atas kartu. Tidak perlu install aplik
 | Kartu (`cards/`) | Produk |
 |---|---|
 | `Card_lv-keepall-50.png` | Keepall Bandoulière 50 |
-| `Card_lv-speedy-30.png` | Speedy 30 |
+| `Card_lv-tambour.png` | Tambour Watch |
 | `Card_lv-neverfull-mm.png` | Neverfull MM |
 | `Card_lv-trainer.png` | LV Trainer Sneaker |
 | `Card_lv-malle-courrier.png` | Malle Courrier Trunk |

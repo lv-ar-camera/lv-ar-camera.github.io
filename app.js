@@ -75,6 +75,13 @@ class ProductRig {
     if (e.type === 'LinkWave') {
       base.links = e.links.map((n) => this.root.getObjectByName(n)).filter(Boolean).map((l) => ({ l, q: l.quaternion.clone() }));
     }
+    if (e.type === 'ClockHands') {
+      base.hands = {};
+      for (const k of ['hour', 'minute', 'second']) {
+        const n = this.root.getObjectByName(e[k]);
+        if (n) base.hands[k] = { node: n, quat: n.quaternion.clone() };
+      }
+    }
     if (e.type === 'Pulse') {
       base.mats = [];
       node.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); base.mats.push(o.material); } });
@@ -126,6 +133,18 @@ function runEffect(e, dt, time) {
       let s = 0.5 - 0.5 * Math.cos(p * Math.PI * 2);
       s = Math.max(0, Math.min(1, (s - 0.25) / 0.5));
       e.node.position.copy(e.pos).addScaledVector(Y, e.lift * s * s * (3 - 2 * s));
+      break;
+    }
+    case 'ClockHands': {
+      // jarum mengikuti jam asli; rotasi sumbu Y Unity → sumbu Y three.js dengan tanda dibalik
+      const now = new Date();
+      const sec = now.getSeconds() + now.getMilliseconds() / 1000;
+      const min = now.getMinutes() + sec / 60;
+      const hour = (now.getHours() % 12) + min / 60;
+      for (const [k, deg] of [['second', sec * 6], ['minute', min * 6], ['hour', hour * 30]]) {
+        const h = e.hands[k];
+        if (h) h.node.quaternion.copy(h.quat).multiply(qAxis(Y, -deg * DEG));
+      }
       break;
     }
     case 'Hinge': {
@@ -192,7 +211,7 @@ async function startAR() {
   const mindar = new MindARThree({
     container: $('ar'),
     imageTargetSrc: 'targets.mind',
-    maxTrack: 2,
+    maxTrack: 1, // hanya 1 kartu dilacak → hanya 1 produk tampil
     uiLoading: 'no',
     uiScanning: 'no',
     uiError: 'no',
@@ -225,7 +244,12 @@ async function startAR() {
 
     const rig = new ProductRig(p, obj);
     rigs.push(rig);
-    anchor.onTargetFound = () => { rig.show(); visible.push(p); updateHud(visible); };
+    anchor.onTargetFound = () => {
+      // hanya satu produk boleh tampil: sembunyikan yang lain
+      for (const other of rigs) if (other !== rig) other.hide();
+      visible.length = 0;
+      rig.show(); visible.push(p); updateHud(visible);
+    };
     anchor.onTargetLost = () => { rig.hide(); visible.splice(visible.indexOf(p), 1); updateHud(visible); };
   });
 
